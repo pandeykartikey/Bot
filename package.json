@@ -1,0 +1,27 @@
+{
+  "name": "bot",
+  "version": "0.0.0",
+  "description": "My first package",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KP251/Bot.git"
+  },
+  "author": "Kartikey Pandey <k.p.2511998@gmail.com>",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/KP251/Bot/issues"
+  },
+  "homepage": "https://github.com/KP251/Bot#readme",
+  "dependencies": {
+    "botbuilder": "^3.5.4",
+    "restify": "^4.3.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "Trial"
+  ]
+}
