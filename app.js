@@ -32,7 +32,10 @@ bot.dialog('/show', [
     	session.send('Task yet to be completed are -->')
     	for (var j = i; j >= 0; j--) {
     	session.send('%s',task[j]);
-    }}
+    	}
+    	session.send('What do you want to do now? %s!', session.userData.name);
+
+}
 ]);
 
 
@@ -97,6 +100,7 @@ bot.dialog('/add more',[
 		}
 		else if(res=='no'){
 			session.endDialog();
+			session.send('What do you want to do now? %s!', session.userData.name);
 		}
 		else{
 			session.send("I'm sorry. I didn't understand.");
@@ -117,6 +121,7 @@ bot.dialog('/remove more',[
 		}
 		else if(res=='no'){
 			session.endDialog();
+			session.send('What do you want to do now? %s!', session.userData.name);
 		}
 		else{
 			session.send("I'm sorry. I didn't understand.");
