@@ -3,16 +3,35 @@ var builder = require('botbuilder');
 var connector = new builder.ConsoleConnector().listen();
 var bot = new builder.UniversalBot(connector);
 var intents = new builder.IntentDialog();
+function details(session){
+    this.head="";
+    this.t=0;
+    this.stop;
+    this.it=0;
+    this.start=function(){
+        var to=this.t;
+        var h1=this.head;
+        var it1=this.it;
+       this.stop= setTimeout(function(){ session.send(h1);
+        task.splice(it1, 1);
+            i--; 
+            time.splice(it1, 1);},to);
+    }
+};
 var task=[];
+var time=[];
 var i=-1;
 
 bot.dialog('/',intents
     .matches(/^add task/i, '/add')
     .matches(/^show task/i, '/show')
     .matches(/^remove task/i, '/remove')
-);
+    );
 
-
+function time (session,t){
+    var print=task[i];
+    setTimeout(function func(){session.send(print);},t);
+}
 
 
 
@@ -34,6 +53,7 @@ bot.dialog('/show', [
     	session.send('%s',task[j]);
     	}
     	session.send('What do you want to do now? %s!', session.userData.name);
+        session.endDialog();
 
 }
 ]);
@@ -50,6 +70,8 @@ bot.dialog('/remove', [
          session.send("Task does not exist");}
          else {
          	task.splice(index, 1);
+            clearTimeout(time[index].stop);
+            time.splice(index, 1);
          	i--;
          	session.send('Ok... Changed your task has been removed');
 
@@ -83,6 +105,14 @@ bot.dialog('/add', [
         task.push(results.response);
         i++;
         session.send('Ok... Your task has been added %s', task[i]);
+        builder.Prompts.text(session,'Tell the time due in hours?');
+    },
+    function(session,results){
+        time.push(new details(session));
+        time[i].head=task[i];
+        time[i].t=results.response;
+        time[i].it=i;
+        time[i].start();
         session.endDialog();
         session.beginDialog('/add more');
 
