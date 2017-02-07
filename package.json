@@ -18,6 +18,7 @@
   "homepage": "https://github.com/KP251/Bot#readme",
   "dependencies": {
     "botbuilder": "^3.5.4",
+    "dotenv-extended": "^1.0.4",
     "restify": "^4.3.0"
   },
   "devDependencies": {},
