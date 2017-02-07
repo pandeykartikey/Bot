@@ -4,7 +4,7 @@ var restify = require('restify');
 require('dotenv-extended').load();
 //var builder = require('botbuilder');
 
-var model = process.env.LUIS_API_URL;
+var model = https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/950a741a-7337-4eea-8f63-ea622066429e?subscription-key=415910ca343a4c4f8804c8c6889d90f9&verbose=true;
 var recognizer = new builder.LuisRecognizer(model);
 var dialog = new builder.IntentDialog({ recognizers: [recognizer] });
 
@@ -15,8 +15,8 @@ server.listen(process.env.port || process.env.PORT || 3978, function () {
 
 // Create chat bot
 var connector = new builder.ChatConnector({
-    appId: process.env.MICROSOFT_APP_ID,
-    appPassword: process.env.MICROSOFT_APP_PASSWORD
+    appId: "7b014966-88e1-4f65-9ca9-dd6d4d38e3e4",
+    appPassword: "7ZUoEwdDGUFTuuaJyqjcd8J"
 });
 
 var bot = new builder.UniversalBot(connector);
