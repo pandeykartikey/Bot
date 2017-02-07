@@ -1,8 +1,29 @@
+//requirejs(['node_modules/botbuilder/lib/botbuilder'], function (builder) {
 var builder = require('botbuilder');
+var restify = require('restify');
 
-var connector = new builder.ConsoleConnector().listen();
+//var builder = require('botbuilder');
+
+var model = 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/950a741a-7337-4eea-8f63-ea622066429e?subscription-key=415910ca343a4c4f8804c8c6889d90f9&verbose=true';
+var recognizer = new builder.LuisRecognizer(model);
+var dialog = new builder.IntentDialog({ recognizers: [recognizer] });
+
+var server = restify.createServer();
+server.listen(process.env.port || process.env.PORT || 3978, function () {
+    console.log('%s listening to %s', server.name, server.url);
+});
+
+// Create chat bot
+var connector = new builder.ChatConnector({
+    appId: process.env.MICROSOFT_APP_ID,
+    appPassword: process.env.MICROSOFT_APP_PASSWORD
+});
+
 var bot = new builder.UniversalBot(connector);
 var intents = new builder.IntentDialog();
+
+server.post('/api/messages', connector.listen());
+
 
 function details(session) {
     this.head = "";
@@ -21,13 +42,17 @@ function details(session) {
     }
 };
 var task;
+var temp;
 var time = [];
 var i = -1;
+var name;
 
-bot.dialog('/', intents
-    .matches(/^add task/i, '/add')
-    .matches(/^show task/i, '/show')
-    .matches(/^remove task/i, '/remove')
+bot.dialog('/', dialog
+    .matches('Add Task', '/add')
+    .matches('Show tasks', '/show')
+    .matches('Remove task', '/remove')
+    .matches('None','/none')
+    .matches('Greetings','/greet')
 );
 
 
@@ -37,7 +62,7 @@ bot.dialog('/show', [
     },
     function(session,results) {
         if(results.response=='all'){
-        if (i > 0) {
+        if (i > -1) {
             session.send('Task yet to be completed are -->')
             for (var j = i; j >= 0; j--) {
                 session.send('%s', time[j].head);
@@ -46,20 +71,28 @@ bot.dialog('/show', [
             session.send('No task remaining');
         }}
         else{
-            var da=results.response;
-            var today= new Date();
-        var yr =da.substr(0,4);
-        var month= da.substr(5,2);
-        var day=da.substr(8,2);
-        var y2k  = new Date(yr, month-1, day);
-        var diff=Date.daysBetween(today,y2k);
+var  da=results.response;
+        var reg=/^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$/ ;
+        if(da.match(reg)==null){
+        builder.Prompts.text(session, 'Please send the date in the format dd/mm/yyyy or dd-mm-yyyy')
+        session.beginDialog('/date');
+        }
+        else{
+        var today= new Date();
+        var yr =da.substr(6,4);
+        var month= da.substr(3,2);
+        var day=da.substr(0,2);
+        var y2k  = new Date(yr, month-1, day); 
+        temp =Date.daysBetween(today,y2k);
+        }
+        var diff=temp;
             session.send('Task yet to be completed on %s are -->',da);
          for (var j = i; j >= 0; j--) {
                 if(diff==time[j].t){
                 session.send('%s', time[j].head);}
             }
         }
-        session.send('What do you want to do now? %s!', session.userData.name);
+        session.send('What do you want to do now? %s!', name);
         session.endDialog();
 
     }
@@ -95,20 +128,26 @@ bot.dialog('/remove', [
 ]);
 
 
-intents.onDefault([
+bot.dialog('/greet',[
     function(session, args, next) {
-        if (!session.userData.name) {
+        if (!name) {
+            session.send('Hi');
             session.beginDialog('/profile');
         } else {
             next();
         }
     },
     function(session, results) {
-        session.send('What do you want to do now? %s!', session.userData.name);
-        intents.onDefault(builder.DialogAction.send("I'm sorry. I didn't understand."));
+        session.send('Hi!...What do you want to do now? %s!', name);
+        session.endDialog();
     }
 ]);
-
+bot.dialog('/none',[
+    function(session){
+        session.send("I'm sorry. I didn't understand.");
+        session.endDialog();
+    }
+    ]);
 bot.dialog('/add', [
     function(session) {
         builder.Prompts.text(session, 'What do you want to add?');
@@ -118,18 +157,19 @@ bot.dialog('/add', [
         
         task = results.response;
         session.send('Ok... Your task has been added %s', task);
-        builder.Prompts.text(session, 'Tell the due date?');
-    },
-    function(session, results) {
         time.push(new details(session));
+        //session.send('Tell the due date?');
+        session.beginDialog('/date');},
+        function(session){
         time[i].head = task;
-        var  da=results.response;
+        /*var  da=results.response;
         var today= new Date();
         var yr =da.substr(0,4);
         var month= da.substr(5,2);
         var day=da.substr(8,2);
         var y2k  = new Date(yr, month-1, day); 
-        time[i].t =Date.daysBetween(today,y2k); 
+        time[i].t =Date.daysBetween(today,y2k);*/ 
+        time[i].t=temp;
         time[i].it = i;
         time[i].start();
         session.endDialog();
@@ -162,7 +202,7 @@ bot.dialog('/add more', [
             session.beginDialog('/add');
         } else if (res == 'no') {
             session.endDialog();
-            session.send('What do you want to do now? %s!', session.userData.name);
+            session.send('What do you want to do now? %s!', name);
         } else {
             session.send("I'm sorry. I didn't understand.");
             session.beginDialog('/add more');
@@ -181,7 +221,7 @@ bot.dialog('/remove more', [
             session.beginDialog('/remove');
         } else if (res == 'no') {
             session.endDialog();
-            session.send('What do you want to do now? %s!', session.userData.name);
+            session.send('What do you want to do now? %s!', name);
         } else {
             session.send("I'm sorry. I didn't understand.");
             session.beginDialog('/remove more');
@@ -192,10 +232,40 @@ bot.dialog('/remove more', [
 
 bot.dialog('/profile', [
     function(session) {
-        builder.Prompts.text(session, 'Hi! What is your name?');
+        builder.Prompts.text(session, 'What is your name?');
     },
     function(session, results) {
-        session.userData.name = results.response;
+
+        var t=String(results.response);
+        var rege=/^[a-zA-Z]*$/ ;
+        if(t.match(rege)==null){
+        session.send( 'Strange one, please enter a name that contains only alphabets! ')
+        session.beginDialog('/profile');
+        }
+        else{
+        name=t;
         session.endDialog();
-    }
+    }}
 ]);
+//});
+bot.dialog('/date',[
+    function(session) {
+        builder.Prompts.text(session,'Tell the due date ?');
+    },
+    function(session, results) {
+            var  da=String(results.response);
+        var reg=/^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$/ ;
+        if(da.match(reg)==null){
+        session.send ('Please send the date in the format dd/mm/yyyy or dd-mm-yyyy');
+        session.beginDialog('/date');
+       }
+        else{
+        var today= new Date();
+        var yr =da.substr(6,4);
+        var month= da.substr(3,2);
+        var day=da.substr(0,2);
+        var y2k  = new Date(yr, month-1, day); 
+        temp =Date.daysBetween(today,y2k);
+        session.endDialog();
+     }
+    }]);
