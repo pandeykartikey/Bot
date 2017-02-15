@@ -65,3 +65,26 @@ bot.dialog('/profile', [
         session.endDialog();
     }
 ]);
+//Finding Entities, Adding task if not present
+var recognizer = new builder.LuisRecognizer('<your models url>');
+var intents = new builder.IntentDialog({ recognizers: [recognizer] });
+bot.dialog('/', intents);
+
+intents.matches('AddTask', [
+    function (session, args, next) {
+        var task = builder.EntityRecognizer.findEntity(args.entities, 'TaskTitle');
+        if (!task) {
+            builder.Prompts.text(session, "What would you like to call the task?");
+        } else {
+            next({ response: task.entity });
+        }
+    },
+    function (session, results) {
+        if (results.response) {
+            // ... save task
+            session.send("Ok... Added the '%s' task.", results.response);
+        } else {
+            session.send("Ok");
+        }
+    }
+]);
